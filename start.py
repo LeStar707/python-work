@@ -10,9 +10,10 @@ report = pd.read_excel('2023-02-copy.xlsx')
 
 for paket_id in report["Код Анализа"]:
 
-    if paket_id in data:
-        print("Це пакет")
+    if paket_id in data: #Шукае Код Аналіза у першому рядку
+       print("Це пакет")
     else:
-        for test_id in data["№ Теста IQLab"]:
+       for test_id in data["№ Тест IQLab"]: #Шукає Код Аналіза у першому стовпчику
             if test_id == paket_id:
                 print("Це тест")
+# А якщо Код Аналіза не знайдено?
