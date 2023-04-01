@@ -1,29 +1,33 @@
 import pandas as pd
 
-# Завантажуємо дані з Excel файлів
-price = pd.read_excel('price.xlsx')
-paket = pd.read_excel('paket1.xlsx')
+# Завантажуємо дані з Excel файлу
+data = pd.read_excel('Paket.xlsx')
 report = pd.read_excel('2023-02-copy.xlsx')
 
-# Створюємо словник для зберігання результатів запросу
 results = {}
 
-# Рахуємо одинокі тести з бази даних
-for test_id in report["Код Анализа"]:
+for paket_id in report["Код Анализа"]:  # Код пакету чи код тесту
 
-    if test_id in price["№ Тест IQLab"].values:  # Шукае Код Аналіза у прайсі
-         if test_id in results:
-             results[test_id] += 1
-         else:
-             results[test_id] = 1
+    if paket_id in data:  # Шукае код пакету у першому рядку
 
-print(results)
+        for key, val in data[paket_id].items():  # Отримуємо ключ та значення з стовпчика з кодом пакета
+
+            if val == 1:  # Шукаємо значення 1 у стовпчику пакета та відбираємо коди тестів що в нього входять
+                test_id = data.loc[key]['№ Тест IQLab']
+                results.setdefault(test_id, 0)
+                results[test_id] += 1
+
+    else:  # Пошук окремих тестів
+        if paket_id in data["№ Тест IQLab"].values:  # Шукає код тесту у першому стовпчику
+            results.setdefault(paket_id, 0)
+            results[paket_id] += 1
+        else:
+            print('Тест не знайдений: ' + str(paket_id))
 
 zvit = pd.DataFrame(list(results.items()), columns=['Код', 'Кількість'])
+zvit.to_excel('zvit.xlsx', index=False)
+print(results)
 
-zvit.to_excel('result.xlsx', index=False)
-
-print(zvit)
 
 
 
