@@ -1,70 +1,134 @@
 import math
-
 import pandas as pd
 
 # Завантажуємо дані з Excel файлу
-data = pd.read_excel('Paket.xlsx')
-report = pd.read_excel('2023-02-copy.xlsx')
+dictionary = pd.read_excel('Paket.xlsx')  # Довідник
+raw_report = pd.read_excel('2023-03.xlsx')  # Масив даних
+# Необхідно перевірити правильність наіменуваннь стовпчиків з даними 'Код Анализа', 'Ціна Факт'
 
 results = {}
-# Створюємо масив виду
-# {
-# 4024: {'title': "Білок", 'counter': 246, 'cost': 9859.210000000001},
-# 4025: {'title': "Сечовина", 'counter': 355, 'cost': 21265.23},
-# }
-
+''' Створюємо масив виду
+{
+4024: {'title': "Сечовина", 'counter': 246, 'cost': 9859.210000000001},
+4025: {'title': "Сечова кислота", 'counter': 355, 'cost': 21265.23},
+}
+'''
 packages = {}
-# Створюємо масив виду
-# {
-# (9080, 1): {'package cost': 265.50, 4024: 88.50, 4025: 88.50, 4026: 88.50}
-# (9040, 18): {'package cost': 530.00, 9026: 205.87, 5014: 162.07, 9009: 162.07}
-# (9080, 62): {'package cost': 265.50, 4024: 88.50, 4025: 88.50, 4026: 88.50}
-# }
+'''Створюємо масив виду
+{
+(9080, 1): {'package cost': 265.50, 4024: 88.50, 4025: 88.50, 4026: 88.50}
+(9040, 18): {'package cost': 530.00, 9026: 205.87, 5014: 162.07, 9009: 162.07}
+(9080, 62): {'package cost': 265.50, 4024: 88.50, 4025: 88.50, 4026: 88.50}
+}
+'''
+for report_string_id, package_id in raw_report["Код Анализа"].items():
+# Вибираємо номер строки і Код пакету / Код аналізу у значеннях стовпчика 'Код Анализа' у Масиві даних
 
-for report_num, paket_id in report["Код Анализа"].items():  # Визначаємо Код пакету чи Код аналізу
+    if package_id in dictionary:
+    # Шукае Код пакету у першому рядку Довідника
 
-    if paket_id in data:  # Шукае код пакету у першому рядку
-        packages.setdefault((paket_id, report_num), {'package cost': report.iloc[report_num]['Ціна Факт']})
+        packages.setdefault((package_id, report_string_id), {'package cost': raw_report.iloc[report_string_id]['Ціна Факт']})
+        # Встановлюємо дані за замовченням для масиву packages
+        # Сворюємо подвійний ключ (кортеж (package_id, report_string_id)) та значення для ключа у вигляді масиву, який має
+        # один ключ "package cost", що містить значення з рядка report_num та стовпця "Ціна Факт" з Масиву даних
 
-        for key, val in data[paket_id].items():  # Отримуємо ключ та значення з стовпчика з кодом пакета
+        for dictionary_string_id, column_value in dictionary[package_id].items():
+        # Визначаємо які тести входять у пакет
+        # Отримуємо ключ та значення із Довідника зі стовпчика з кодом пакета
+            if column_value == 1:
+            # Шукаємо значення 1 у стовпчику з кодом пакета
 
-            if val == 1:  # Шукаємо значення 1 у стовпчику пакета та відбираємо коди тестів що в нього входять
-                test_id = data.loc[key]['№ Тест IQLab']
+                test_id = dictionary.loc[dictionary_string_id]['№ Тест IQLab']
+                # При знаходженні 1, передаємо код тесту у змінну test_id з Довідника
+
                 results.setdefault(test_id, {'title': '', 'counter': 0, 'cost': 0})
+                # Встановлюємо дані за замовченням для масиву results
+                # Ключем для масиву буде код тесту test_id, а значенням - масив з наступними даними
+                # Назва тесту 'title' - пуста строка
+                # Кількість проданих тестів 'counter' = 0
+                # Загальна сума продажу по тесту 'cost' = 0
+
                 results[test_id]['counter'] += 1
-                results[test_id]['title'] = data.iloc[key]['Тест IQ Lab']
-                packages[(paket_id, report_num)][test_id] = data.iloc[key]['Ціна']
+                # При знаходженні 1, збільшуємо кількість проданих тестів 'counter' на 1 для відповідного тесту
 
+                results[test_id]['title'] = dictionary.iloc[dictionary_string_id]['Тест IQ Lab']
+                # При знаходженні 1, переносимо назву тесту у стовпчик 'title' з Довідника
 
-    else:  # Пошук окремих тестів
-        if paket_id in data["№ Тест IQLab"].values:  # Шукає код тесту у першому стовпчику
-            results.setdefault(paket_id, {'counter': 0, 'cost': 0})
-            results[paket_id]['counter'] += 1
-            test_column_number = data["№ Тест IQLab"].index[data["№ Тест IQLab"].eq(paket_id)].tolist()[0]
-            results[paket_id]['title'] = data.iloc[test_column_number]['Тест IQ Lab']
-            if not math.isnan(report.iloc[report_num]['Ціна Факт']):
-                results[paket_id]['cost'] += report.iloc[report_num]['Ціна Факт']
+                packages[(package_id, report_string_id)][test_id] = dictionary.iloc[dictionary_string_id]['Ціна']
+                # При знаходженні 1, наповнюємо масив packages даними про роздрібну ціну тесту з Довідника
+
+    else:
+    # Якщо код пакету не знайдено у першому рядку Довідника, то це тест
+
+        if package_id in dictionary['№ Тест IQLab'].values:
+        # Шукає код тесту у стовпчику '№ Тест IQLab' у Довіднику
+
+            results.setdefault(package_id, {'counter': 0, 'cost': 0})
+            # Встановлюємо дані за замовченням для масиву results
+
+            results[package_id]['counter'] += 1
+            # Збільшуємо кількість проданих тестів 'counter' на 1 для відповідного тесту
+
+            dictionary_string_id_for_test = dictionary["№ Тест IQLab"].eq(package_id).idxmax()
+            # Отримуємо номер строки у Довіднику який співпадає з package_id
+
+            results[package_id]['title'] = dictionary.iloc[dictionary_string_id_for_test]['Тест IQ Lab']
+            # Отримуємо назву тесту з Довідника
+
+            if not math.isnan(raw_report.iloc[report_string_id]['Ціна Факт']):
+                # Якщо у Масиві даних 'Ціна Факт' не пуста
+                results[package_id]['cost'] += raw_report.iloc[report_string_id]['Ціна Факт']
+                # Додаємо 'Ціна Факт' до загальної суми
             else:
-                print('Не вказана ціна :' + str(paket_id))
+                print('Не вказана ціна :' + str(package_id))
+                # Виводить на екран прелік тестів, по яким не вказана 'Ціна Факт'
+                # Скорше за все - це повернення коштів
         else:
-            print('Тест не знайдений: ' + str(paket_id))
+            print('Тест не знайдений: ' + str(package_id))
+            # Виводить номер тесту, який не знайдений у Довіднику
 
-for package_key, package_value in packages.items():
+for package_id_and_string_id, package_test_array in packages.items():
+    # Отримуємо елементи з масиву packages
+    # package_id_and_string_id = (9080, 1)
+    # package_test_array = {'package cost': 265.50, 4024: 88.50, 4025: 88.50, 4026: 88.50}
     package_cost = 0
-    tests_sum = 0
-    for test_key, test_cost in package_value.items():
-        if test_key == "package cost" and not math.isnan(test_cost):
-            package_cost = test_cost
-        elif not math.isnan(test_cost):
-            tests_sum += float(test_cost)
+    package_tests_cost_sum = 0
+    # Встановили значення за замовченням
 
-    for test_key, test_cost in package_value.items():
-        if test_key != "package cost" and not math.isnan(test_cost):
-            test_percent = test_cost / tests_sum
+    # Підраховуємо всю суму тестів у пакеті
+    for package_test_id, package_test_cost in package_test_array.items():
+        # Отримали номер та ціну тесту з масиву package_test_array
+        # package_test_id = 'package cost' / 4024 / 4025 / 4026
+        # package_test_cost = 265.50 / 88.50 / 88.50 / 88.50
+        if package_test_id == "package cost" and not math.isnan(package_test_cost):
+            # Якщо package_test_id = "package cost" і ціна пакету не 0
+            package_cost = package_test_cost
+            # Зберігаємо у зміну package_cost
+        elif not math.isnan(package_test_cost):
+            # Якщо ціна пакету не 0
+            package_tests_cost_sum += float(package_test_cost)
+            # У загальну суму тестів додаємо суму тесту
+
+    # У цьому циклі підраховуємо долю кожного тесту в пакеті
+    for package_test_id, package_test_cost in package_test_array.items():
+        # Отримали номер та ціну тесту з масиву package_test_array
+        # package_test_id = 'package cost' / 4024 / 4025 / 4026
+        # package_test_cost = 265.50 / 110.0 / 110.0 / 110.0
+        if package_test_id != "package cost" and not math.isnan(package_test_cost):
+            # Вартість пакету не враховуємо, працюємо тільки з тестами
+            test_percent = package_test_cost / package_tests_cost_sum
+            # Беремо ціну одного тесту у пакеті і ділимо на суму всих тестів у цьому пакеті = 110.0 / 330.0 = 0.333
             test_new_cost = package_cost * test_percent
-            results[test_key]['cost'] += float(test_new_cost)
+            # 265.50 * 0.333
+            results[package_test_id]['cost'] += float(test_new_cost)
+            # Додаємо до масиву results у стовпчик ціни тесту результат обчислення вартості тесту у пакеті
 
 zvit = pd.DataFrame.from_dict(results, orient='index')
+# Формується словник у форматі pd.DataFrame з фінального масиву results
+zvit = zvit.sort_index()
+# Дані у файлі сортуються по індексу (коду теста)
 zvit.to_excel('zvit.xlsx', index=True)
+# Формує остаточний файл з даними у Excel
 print(zvit)
+# Виводить остаточний файл на екран
 
