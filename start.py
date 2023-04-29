@@ -26,8 +26,14 @@ for report_string_id, package_id in raw_report["Код Анализа"].items():
 
     if package_id in dictionary:
     # Шукае Код пакету у першому рядку Довідника
+        if not math.isnan(raw_report.iloc[report_string_id]['Сумма Возврата']):
+            # Якщо є сума повернення, то зберігаємо її у змінну package_cost зі знаком "-"
+            package_cost = -raw_report.iloc[report_string_id]['Сумма Возврата']
+        else:
+            # Якщо немає суми повернення, то беремо фактичну ціну
+            package_cost = raw_report.iloc[report_string_id]['Ціна Факт']
 
-        packages.setdefault((package_id, report_string_id), {'package cost': raw_report.iloc[report_string_id]['Ціна Факт']})
+        packages.setdefault((package_id, report_string_id), {'package cost': package_cost})
         # Встановлюємо дані за замовченням для масиву packages
         # Сворюємо подвійний ключ (кортеж (package_id, report_string_id)) та значення для ключа у вигляді масиву, який має
         # один ключ "package cost", що містить значення з рядка report_num та стовпця "Ціна Факт" з Масиву даних
@@ -83,6 +89,13 @@ for report_string_id, package_id in raw_report["Код Анализа"].items():
                 print('Не вказана ціна :' + str(package_id))
                 # Виводить на екран прелік тестів, по яким не вказана 'Ціна Факт'
                 # Скорше за все - це повернення коштів
+
+            if not math.isnan(raw_report.iloc[report_string_id]['Сумма Возврата']):
+                # Якщо 'Сумма Возврата' не пуста
+                results[package_id]['counter'] -= 1
+                # Віднімаємо тест від уже порахованої кількості
+                results[package_id]['cost'] -= raw_report.iloc[report_string_id]['Сумма Возврата']
+                # Віднімаємо суму повернення по тесту від уже порахованої суми
         else:
             print('Тест не знайдений: ' + str(package_id))
             # Виводить номер тесту, який не знайдений у Довіднику
@@ -105,6 +118,10 @@ for package_id_and_string_id, package_test_array in packages.items():
             package_cost = package_test_cost
             # Зберігаємо у зміну package_cost
         elif not math.isnan(package_test_cost):
+            # Обробляємо тести з пакету
+            if package_cost < 0:
+                # Якщо сума пакет < 0 ми розуміємо, що це повернення і віднімаємо 1 від кількості тестів
+                results[package_test_id]['counter'] -= 1
             # Якщо ціна пакету не 0
             package_tests_cost_sum += float(package_test_cost)
             # У загальну суму тестів додаємо суму тесту
