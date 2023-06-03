@@ -3,8 +3,8 @@ import pandas as pd
 
 # Завантажуємо дані з Excel файлу
 dictionary = pd.read_excel('Paket.xlsx')  # Довідник
-raw_report = pd.read_excel('2023-03.xlsx')  # Масив даних
-# Необхідно перевірити правильність наіменуваннь стовпчиків з даними 'Код Анализа', 'Ціна Факт'
+raw_report = pd.read_excel('2023_05.xlsx')  # Масив даних
+# Необхідно перевірити правильність наіменуваннь стовпчиків з даними 'Код послуги', 'Ціна Факт'
 
 results = {}
 ''' Створюємо масив виду
@@ -21,14 +21,14 @@ packages = {}
 (9080, 62): {'package cost': 265.50, 4024: 88.50, 4025: 88.50, 4026: 88.50}
 }
 '''
-for report_string_id, package_id in raw_report["Код Анализа"].items():
-# Вибираємо номер строки і Код пакету / Код аналізу у значеннях стовпчика 'Код Анализа' у Масиві даних
+for report_string_id, package_id in raw_report["Код послуги"].items():
+# Вибираємо номер строки і Код пакету / Код аналізу у значеннях стовпчика 'Код послуги' у Масиві даних
 
     if package_id in dictionary:
     # Шукае Код пакету у першому рядку Довідника
-        if not math.isnan(raw_report.iloc[report_string_id]['Сумма Возврата']):
+        if not math.isnan(raw_report.iloc[report_string_id]['Сума повернення']):
             # Якщо є сума повернення, то зберігаємо її у змінну package_cost зі знаком "-"
-            package_cost = -raw_report.iloc[report_string_id]['Сумма Возврата']
+            package_cost = -raw_report.iloc[report_string_id]['Сума повернення']
         else:
             # Якщо немає суми повернення, то беремо фактичну ціну
             package_cost = raw_report.iloc[report_string_id]['Ціна Факт']
@@ -90,11 +90,11 @@ for report_string_id, package_id in raw_report["Код Анализа"].items():
                 # Виводить на екран прелік тестів, по яким не вказана 'Ціна Факт'
                 # Скорше за все - це повернення коштів
 
-            if not math.isnan(raw_report.iloc[report_string_id]['Сумма Возврата']):
-                # Якщо 'Сумма Возврата' не пуста
+            if not math.isnan(raw_report.iloc[report_string_id]['Сума повернення']):
+                # Якщо 'Сума повернення' не пуста
                 results[package_id]['counter'] -= 1
                 # Віднімаємо тест від уже порахованої кількості
-                results[package_id]['cost'] -= raw_report.iloc[report_string_id]['Сумма Возврата']
+                results[package_id]['cost'] -= raw_report.iloc[report_string_id]['Сума повернення']
                 # Віднімаємо суму повернення по тесту від уже порахованої суми
         else:
             print('Тест не знайдений: ' + str(package_id))
