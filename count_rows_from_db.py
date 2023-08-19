@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-
+# Зростання бази даних помісячно по кількості наданих послуг
 
 client = MongoClient('mongodb://localhost:27017/')
 result = client['Cluster0']['raw_report'].aggregate([

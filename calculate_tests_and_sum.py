@@ -1,10 +1,21 @@
 import math
 import pandas as pd
+from datetime import datetime
 
 # Завантажуємо дані з Excel файлу
 dictionary = pd.read_excel('Paket.xlsx')  # Довідник
-raw_report = pd.read_excel('2023_05.xlsx')  # Масив даних
+raw_report = pd.read_excel('2023_08.xlsx')  # Масив даних
 # Необхідно перевірити правильність наіменуваннь стовпчиків з даними 'Код послуги', 'Ціна Факт'
+
+# Функція, яка поєднує стовпчики Рік, Місяць, Число у новому стовпчику Дата
+def compilation_date(day, month, year):
+    months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+    input_date = str(day) + "." + str(months.index(month) + 1) + "." + str(year)
+    # Форматуємо текст у дату
+    parsed_date = datetime.strptime(input_date, "%d.%m.%Y")
+    # Форматування дати у рядок з допомогою методу strftime()
+    return parsed_date.strftime("%d.%m.%Y")
+
 
 results = {}
 ''' Створюємо масив виду
@@ -140,12 +151,24 @@ for package_id_and_string_id, package_test_array in packages.items():
             results[package_test_id]['cost'] += float(test_new_cost)
             # Додаємо до масиву results у стовпчик ціни тесту результат обчислення вартості тесту у пакеті
 
-zvit = pd.DataFrame.from_dict(results, orient='index')
 # Формується словник у форматі pd.DataFrame з фінального масиву results
-zvit = zvit.sort_index()
+zvit = pd.DataFrame.from_dict(results, orient='index')
 # Дані у файлі сортуються по індексу (коду теста)
-zvit.to_excel('zvit.xlsx', index=True)
+zvit = zvit.sort_index()
 # Формує остаточний файл з даними у Excel
-print(zvit)
+zvit.to_excel('zvit.xlsx', index=True)
 # Виводить остаточний файл на екран
+print(zvit)
 
+# Формуємо окремий файл з сумами виручки та повернень коштів за кожен день
+
+# Додаємо стовпець "Дата" з об'єднаними значеннями Рік, Місяць, Число
+raw_report['Дата'] = raw_report.apply(lambda row: compilation_date(row['Число'], row['Місяць'], row['Рік']), axis=1)
+# Створюємо новий DataFrame з потрібними стовпцями "Дата", "Виручка" та "Повернення"
+income = raw_report[['Дата', 'Ціна Факт', 'Сума повернення']]
+# Групуємо за датою і рахуємо суму замовлень та суму повернень коштів
+income_sum = income.groupby('Дата').agg({'Ціна Факт': 'sum', 'Сума повернення': 'sum'}).reset_index()
+# Формує остаточний файл з даними у Excel
+income_sum.to_excel('income.xlsx', index=False)
+
+print(income_sum)

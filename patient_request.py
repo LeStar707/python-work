@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+import pandas as pd
 
 client = MongoClient('mongodb://localhost:27017/')
 result = client['Cluster0']['raw_report'].aggregate([
