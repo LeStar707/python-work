@@ -1,4 +1,4 @@
-SELECT * FROM base.raw_data; -- Вся база даних
+SELECT * FROM base.raw_data; -- Вся база данихpatients
 SELECT count(*) FROM base.raw_data; -- Кількість рядків в базі даних
 SELECT SUM(t1.counter) FROM (SELECT COUNT(DISTINCT patient_order) AS counter FROM base.raw_data GROUP BY YEAR(date_order), MONTH(date_order)) AS t1; -- Кількість замовлень в базі даних
 SELECT COUNT(DISTINCT patient_order) FROM base.raw_data WHERE date_order BETWEEN '2023-06-01' AND '2023-06-30'; -- Кількість замовлень в базі даних за червень

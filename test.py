@@ -1,126 +1,19 @@
-from pymongo import MongoClient
-import openpyxl
-
-client = MongoClient('mongodb://localhost:27017/')
-
-# Вибір бази даних
-db = client['Cluster0']
-
-# Вибір колекції (таблиці) з даними
-collection = db['raw_report']
-
-# Кількість унікальних пацієнтів
-patient_unik = [
-    {
-        '$group': {
-            '_id': {
-                'Пацієнт': '$Пацієнт',
-                'Дата народження пацієнта': '$Дата народження пацієнта',
-            },
-            'унікальні_пацієнти': {'$sum': 1}
-        }
-    }
-    # {
-    #     '$group': {
-    #         '_id': None,
-    #         'унікальні_пацієнти': {'$sum': 1}
-    #     }
-    # }
-]
-
-result1 = collection.aggregate(patient_unik)
-
-# Отримання кількості унікальних пацієнтів з результату запиту
-patient_sum = result1.next()['унікальні_пацієнти']
-
-print('Кількість унікальних пацієнтів: ', patient_sum)
-
-# Кількість унікальних замовлень
-zakaz_unik = [
-    {
-        '$group': {
-            '_id':  '$Номер замовлення',
-            }
-    },
-    {
-        '$group': {
-            '_id': None,
-            'унікальні_замовлення': {'$sum': 1}
-        }
-    }
-]
-
-result2 = collection.aggregate(zakaz_unik)
-
-# Отримання кількості унікальних замовленнь з результату запиту
-zakaz_sum = result2.next()['унікальні_замовлення']
-
-print('Кількість унікальних замовленнь: ', zakaz_sum)
+def check_blacklist_emails(email):
+    if ";" in email:
+        parts = email.split(";")
+        if parts[0].strip() and remove_bad_emails(parts[0].strip(), connection):
+            parts[0] = ""
+        if len(parts) > 1 and parts[1].strip() and remove_bad_emails(parts[1].strip(), connection):
+            parts[1] = ""
+        email = ";".join(parts)
+    else:
+        email = remove_bad_emails(email, connection)
+        email = ""
+    return email = ""
 
 
-# Виведення інформації "Кількість пацієнтів" та "Кількість їх замовленнь"
-
-# Створення нового Excel-файлу
-wb = openpyxl.Workbook()
-sheet = wb.active
-
-# Запис заголовків стовпців
-header = ["Кількість зроблених замовлень", "Кількість пацієнтів"]
-sheet.append(header)
-
-patient_zakaz_count = [
-    {
-        '$group': {
-            '_id': {
-                'Номер замовлення': '$Номер замовлення'
-            },
-            'кількість_замовлень': {'$sum': 1}
-        }
-    },
-    {
-        '$project': {
-            'Пацієнт': '$Пацієнт',
-            'Дата народження пацієнта': '$Дата народження пацієнта',
-        }
-    },
-    {
-        '$group': {
-            '_id': {
-                'Пацієнт': '$_id.Пацієнт',
-                'Дата народження пацієнта': '$_id.Дата народження пацієнта',
-            },
-            'кількість_пацієнтів': {'$sum': 1},
-            'кількість_замовлень': {'$push': '$кількість_замовлень'}
-        }
-    },
-    # {
-    #     '$project': {
-    #         'кількість_замовлень': '$кількість_замовлень',
-    #         'кількість_пацієнтів': '$кількість_пацієнтів',
-    #         '_id': 0
-    #     }
-    # },
-    # {
-    #     '$group': {
-    #         '_id': '$кількість_замовлень',
-    #         'кількість_пацієнтів': {'$sum': 1}
-    #     }
-    # },
-    {
-        '$sort': {'_id': 1}  # Сортування за кількістю пацієнтів (_id)
-    }
-]
-
-result3 = collection.aggregate(patient_zakaz_count)
-
-# Запис даних у файл Excel
-for doc in result3:
-    кількість_замовлень = doc['_id']
-    кількість_пацієнтів = doc['кількість_пацієнтів']
-    row = [кількість_замовлень, кількість_пацієнтів]
-    sheet.append(row)
-
-# Збереження файлу Excel
-wb.save("rfm.xlsx")
-
-client.close()
+def remove_bad_emails(email):
+    sql = 'SELECT * FROM blacklist_emails WHERE email = %s LIMIT 1'
+    cursor.execute(sql, (email,))
+    if cursor.fetchone() is not None:
+        return email
