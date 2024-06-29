@@ -108,20 +108,15 @@ def check_blacklist_emails(email):
     if email is None:
         return email
     if ";" in email:
-        # Розділення email на частини за допомогою символу ";"
         parts = email.split(";")
-        # Перевірка першої частини email
-        if remove_bad_emails(parts[0].strip()) is not None:
-            parts[0] = ""
-        # Перевірка другої частини email
-        if remove_bad_emails(parts[1].strip()) is not None:
-            parts[1] = ""
+        for i, part in enumerate(parts):
+            parts[i] = remove_bad_emails(part.strip()) or part  # Використовуємо or, щоб зберегти вхідний рядок, якщо remove_bad_emails повертає None
         email = ";".join(parts)
     else:
-        if remove_bad_emails(email) is not None:
-            return ""
-        else:
-            return email
+        email = remove_bad_emails(email) or email  # Використовуємо or, щоб зберегти вхідний рядок, якщо remove_bad_emails повертає None
+    email = email.strip(";")
+    email = email.strip("@")
+    email = email.strip(",")
     return email
 
 
@@ -129,9 +124,12 @@ def check_blacklist_emails(email):
 # 123@gmail.com - None
 # iqlab@example.com - not None
 def remove_bad_emails(email):
-    sql = 'SELECT email, %s REGEXP email AS is_blacklisted FROM blacklist_emails HAVING is_blacklisted = 1 LIMIT 1'
-    cursor.execute(sql, (email,))
-    return cursor.fetchone()
+    cursor.execute("SELECT COUNT(*) FROM blacklist_emails WHERE email = %s", (email,))
+    result = cursor.fetchone()
+    if result[0] > 0:
+        return None  # Повертаємо None, якщо адреса є у чорному списку
+    else:
+        return email
 
 
 # Функція, яка додає дані про нових пацієнтів у базу даних у таблицю patients
@@ -216,6 +214,7 @@ for file_path_from_os in file_list_from_os:
     for document in documents:
         # Модифікація документа
         modify_document = modificate_clean_document(document, file_path_from_os)
+        new_order = ''.join([str(modify_document['Рік']), '.',str(modify_document['Номер замовлення'])])
         # Додавання пацієнта до бази даних
         patient_id = add_patient_to_db(modify_document)
         # Додавання офісу до бази даних
@@ -230,7 +229,7 @@ for file_path_from_os in file_list_from_os:
         data = (document['Лікар'],
                 document['Спеціалізація лікаря'], document['ЛПЗ'],
                 document['Назва послуги'], document['Код послуги'], document['Форма платежу'],
-                document['Договір / Акція'], document['Номер замовлення'], document['Код купона'],
+                document['Договір / Акція'], new_order, document['Код купона'],
                 document['Ціна Прайс'], document['Ціна Факт'], document['Сума повернення'], document['Дата'],
                 document['file'], patient_id, office_id)
         # Виконання SQL-запиту для вставки даних в таблицю raw_data

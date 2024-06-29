@@ -1,10 +1,11 @@
 import math
 import pandas as pd
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 # Завантажуємо дані з Excel файлу
 dictionary = pd.read_excel('Paket.xlsx')  # Довідник
-raw_report = pd.read_excel('2023_09.xlsx')  # Масив даних
+raw_report = pd.read_excel('2024_06.xlsx')  # Масив даних
 # Необхідно перевірити правильність наіменуваннь стовпчиків з даними 'Код послуги', 'Ціна Факт'
 
 # Функція, яка поєднує стовпчики Рік, Місяць, Число у новому стовпчику Дата
@@ -156,7 +157,7 @@ zvit = pd.DataFrame.from_dict(results, orient='index')
 # Дані у файлі сортуються по індексу (коду теста)
 zvit = zvit.sort_index()
 # Формує остаточний файл з даними у Excel
-zvit.to_excel('zvit.xlsx', index=True)
+zvit.to_excel('2_zvit.xlsx', index=True)
 # Виводить остаточний файл на екран
 print(zvit)
 
@@ -169,6 +170,32 @@ income = raw_report[['Дата', 'Ціна Факт', 'Сума повернен
 # Групуємо за датою і рахуємо суму замовлень та суму повернень коштів
 income_sum = income.groupby('Дата').agg({'Ціна Факт': 'sum', 'Сума повернення': 'sum'}).reset_index()
 # Формує остаточний файл з даними у Excel
-income_sum.to_excel('income.xlsx', index=False)
+income_sum.to_excel('1_income.xlsx', index=False)
 
 print(income_sum)
+
+# Формуємо окремий файл з сумами виручки за кожен день
+df = pd.DataFrame(raw_report)
+
+pivot_table = pd.pivot_table(df, values='Ціна Факт', index='Медичний офіс', columns='Число', aggfunc='sum')
+
+pivot_table.to_excel('3_pivot_table.xlsx')
+
+#
+# # Підсумовування значень по всіх офісах для кожного дня
+# daily_totals = pivot_table.iloc[:, 1:].sum()
+#
+# # Створення графіка
+# plt.figure(figsize=(15, 5))
+# plt.plot(daily_totals.index, daily_totals.values, marker='o', linestyle='-', color='r')
+# plt.title('Загальна сума по дням для всіх медичних офісів')
+# plt.xlabel('Дні місяця')
+# plt.ylabel('Загальна сума')
+# plt.grid(True)
+# # Встановлюємо мітки на осі X для кожного дня
+# plt.xticks(daily_totals.index, [str(i) for i in range(1, len(daily_totals) + 1)])
+#
+# plt.xticks(rotation=90)
+# plt.tight_layout()
+# plt.savefig('4_total_daily_sum.png')
+
